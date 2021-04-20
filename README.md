@@ -115,3 +115,76 @@ data class UserEntity(
     , @Ignore var image: Bitmap? = null
 )
 ```
+
+<br>
+
+---
+
+
+## Example
+<img src="https://im.ezgif.com/tmp/ezgif-1-ff13538ab80e.gif">
+
+### 1. Entity
+```kotlin
+@Entity(tableName = "tb_contacts")
+data class Contacts(
+    @PrimaryKey(autoGenerate = false)
+    val id: Long,
+    @ColumnInfo(name = "name")
+    var name: String,
+    @ColumnInfo(name = "tel")
+    var tel: String
+)
+```
+* @PrimaryKey 어노테이션과 autoGenerate=true를 이용해서 Contacts가 새로 생길 때마다 id를 자동으로 올려준다.
+
+### 2. DAO
+```kotlin
+@Dao
+interface ContactsDao {
+    @Query("SELECT * FROM tb_contacts")
+    fun getAll(): List<Contacts>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertAll(vararg contacts: Contacts)
+
+    @Delete
+    fun delete(contacts: Contacts)
+```
+* getAll() : 데이터를 전부 가져올 함수
+* insertAll() : 데이터를 넣어줄 함수, 데이터가 여러개 필요할 수 있기 때문에 가변인자 vararg를 사용
+* @Insert(onConflict = OnConflictStrategy.REPLACE)는 Insert할 때 PK가 겹치는 것이 있으면 덮어 쓴다는 의미이다.
+
+### 3. AppDatabase
+```kotlin
+@Database(entities = [Contacts::class], version = 1, exportSchema = false)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun contactsDao() : ContactsDao
+
+    companion object {
+        private var instance : AppDatabase? = null
+
+        @Synchronized
+        fun getInstance(context: Context) : AppDatabase? {
+            if (instance == null) {
+                instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    "database-contacts"
+                ).allowMainThreadQueries().build()
+            }
+            return instance
+        }
+    }
+
+}
+```
+* version은 추후 Contacts를 변경할 때 migration 할 수 있는 기준이 된다.
+* 어디서든 접근 가능, 중복 생성되지 않게 싱글톤으로 companion object를 이용해서 만들어준다.
+
+### 4. Activity
+* db에 추가하고 삭제하는 코드만 작성
+```kotlin
+db?.contactsDao()?.insertAll(contact) // DB에 추가
+db?.contactsDao()?.delete(contacts = contacts) // DB에서 삭제
+```
