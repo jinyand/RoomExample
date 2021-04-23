@@ -122,7 +122,6 @@ data class UserEntity(
 
 
 ## Example
-<img src="https://im.ezgif.com/tmp/ezgif-1-ff13538ab80e.gif">
 
 ### 1. Entity
 ```kotlin
